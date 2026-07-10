@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
     <title>표정원 비밀 휴대폰 (스모킹 건)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -266,6 +267,74 @@
         }
         .hacking-btn:active { background: #dc2626; }
         @keyframes textBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 실제 휴대폰에서는 목업 베젤을 걷어내고 화면을 꽉 채운다.
+           가로모드 폰은 너비가 넓으므로 높이로 잡는다. 임계값 500px은
+           세로가 짧은 노트북(뷰포트 약 640px)에는 걸리지 않는다. */
+        @media (max-width: 640px), (max-height: 500px) {
+            body {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: #000;
+                background-image: none;
+                overscroll-behavior: none;
+            }
+
+            .phone-frame {
+                width: 100%;
+                height: 100vh;
+                height: 100dvh;
+                border: none;
+                border-radius: 0;
+                box-shadow: none;
+            }
+
+            /* 진짜 노치가 있으므로 가짜 노치는 감춘다 */
+            .notch { display: none; }
+
+            .status-bar {
+                height: calc(44px + env(safe-area-inset-top));
+                padding-top: env(safe-area-inset-top);
+                padding-left: calc(25px + env(safe-area-inset-left));
+                padding-right: calc(25px + env(safe-area-inset-right));
+            }
+
+            .home-screen {
+                padding-top: calc(60px + env(safe-area-inset-top));
+                background-attachment: scroll;
+            }
+
+            .app-window, .app-window.active { border-radius: 0; }
+
+            .app-header { padding-top: calc(56px + env(safe-area-inset-top)); }
+
+            /* 홈바·독·입력창이 기기 하단 제스처 영역에 가리지 않도록 밀어 올린다 */
+            .home-indicator { bottom: calc(12px + env(safe-area-inset-bottom)); }
+            .dock { margin-bottom: calc(35px + env(safe-area-inset-bottom)); }
+            .input-area { padding-bottom: calc(25px + env(safe-area-inset-bottom)); }
+
+            .chat-list-view, .call-list-view { padding-bottom: calc(50px + env(safe-area-inset-bottom)); }
+            .gallery-grid, .settings-content { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+
+            /* 키보드가 올라와도 입력칸이 가리지 않도록 잠금화면을 위쪽에 배치 */
+            #lockScreen {
+                justify-content: flex-start;
+                padding-top: 22vh;
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+
+            /* 16px 미만이면 iOS가 포커스 시 화면을 확대해 버린다 */
+            .password-input { font-size: 22px; }
+        }
+
+        /* 좁고 낮은 화면(폰 가로모드 등)에서는 잠금화면을 더 위로 */
+        @media (max-height: 500px) {
+            #lockScreen { padding-top: 8vh; }
+            .lock-icon { font-size: 28px; margin-bottom: 10px; }
+            .password-input-container { margin-top: 14px; }
+        }
 
     </style>
 </head>
