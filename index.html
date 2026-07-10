@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>표정원 비밀 휴대폰 (스모킹 건)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background-image: radial-gradient(circle at center, #2a2a2a 0%, #111 100%);
+        }
+
+        .phone-frame {
+            width: 375px;
+            height: 812px;
+            background-color: #000;
+            border-radius: 50px;
+            box-shadow: 0 0 0 12px #333, 0 30px 60px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #555;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background-color: #000;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            z-index: 9999;
+        }
+
+        .status-bar {
+            height: 44px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            z-index: 9000;
+            transition: color 0.3s;
+        }
+        
+        .status-bar.dark-text { color: #000; }
+
+        .home-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-top: 60px;
+        }
+
+        .app-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 25px 15px; padding: 20px; }
+        .app-icon-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: transform 0.1s; }
+        .app-icon-wrapper:active { transform: scale(0.9); }
+        .app-icon { width: 60px; height: 60px; border-radius: 16px; display: flex; justify-content: center; align-items: center; font-size: 30px; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .app-name { color: #fff; font-size: 11px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); font-weight: 500; }
+
+        .dock {
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(20px); margin: 10px 15px 35px 15px;
+            border-radius: 30px; padding: 15px 10px; display: flex; justify-content: space-around; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .app-window {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff; z-index: 20;
+            transform: translateY(100%) scale(0.9); opacity: 0;
+            transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease;
+            border-radius: 40px; overflow: hidden; pointer-events: none;
+            display: flex; flex-direction: column;
+        }
+        .app-window.active { transform: translateY(0) scale(1); opacity: 1; border-radius: 0; pointer-events: auto; }
+
+        .home-indicator {
+            position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 130px; height: 5px;
+            background-color: #fff; border-radius: 10px; z-index: 9999; cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3); transition: background-color 0.3s, transform 0.1s;
+        }
+        .home-indicator:active { transform: translateX(-50%) scale(0.95); }
+        .phone-frame.app-open .home-indicator { background-color: #000; box-shadow: none; }
+
+        .app-header {
+            padding: 55px 20px 15px 20px; font-size: 24px; font-weight: 800; border-bottom: 1px solid #eee;
+            display: flex; align-items: center; background-color: #fff; flex-shrink: 0;
+        }
+        .app-header .back-btn { font-size: 22px; margin-right: 15px; cursor: pointer; color: #333; padding: 5px; }
+
+        .chat-list-view { flex-grow: 1; overflow-y: auto; background-color: #fff; padding-bottom: 50px; }
+        .chat-item { display: flex; padding: 15px 20px; align-items: center; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: background-color 0.2s; }
+        .chat-item:active { background-color: #f0f0f0; }
+        .profile-pic { width: 50px; height: 50px; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #fff; margin-right: 15px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .chat-preview { flex-grow: 1; overflow: hidden; }
+        .chat-name { font-weight: 700; font-size: 16px; margin-bottom: 4px; color: #111; }
+        .chat-last-msg { font-size: 13px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-meta { display: flex; flex-direction: column; align-items: flex-end; margin-left: 10px; flex-shrink: 0; }
+        .unread-badge { background-color: #ef4444; color: white; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 12px; }
+
+        .chat-room {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #abc1d1;
+            display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 30;
+        }
+        .chat-room.active { transform: translateX(0); }
+        .chat-room-title { font-size: 18px; font-weight: 700; }
+
+        .chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .chat-messages::-webkit-scrollbar { width: 0; }
+
+        .msg-row { display: flex; align-items: flex-start; margin-bottom: 5px; }
+        .msg-row.me { flex-direction: row-reverse; }
+        .msg-bubble { max-width: 72%; padding: 9px 13px; border-radius: 14px; font-size: 14px; line-height: 1.4; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg-row.other .msg-bubble { background-color: #fff; color: #000; border-top-left-radius: 4px; margin-left: 8px; }
+        .msg-row.me .msg-bubble { background-color: #fee500; color: #000; border-top-right-radius: 4px; }
+        
+        .dark-room .msg-row.other .msg-bubble { background-color: #444; color: #fff; }
+
+        .msg-profile { width: 38px; height: 38px; border-radius: 14px; display: flex; justify-content: center; align-items: center; font-size: 18px; color: #fff; flex-shrink: 0; }
+        .msg-info { display: flex; flex-direction: column; justify-content: flex-end; margin: 0 5px; font-size: 10px; color: #666; padding-bottom: 2px; }
+        .msg-read { color: #ef4444; font-weight: 700; margin-bottom: 2px; text-align: right; }
+        .other-name { font-size: 12px; color: #555; margin-left: 8px; margin-bottom: 4px; font-weight: 500; }
+        .dark-room .other-name { color: #bbb; }
+
+        .input-area { padding: 10px 15px 25px 15px; background-color: #fff; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .dark-room .input-area { background-color: #1a1a1a; }
+        .input-box { flex-grow: 1; background-color: #f1f3f5; border-radius: 20px; padding: 10px 15px; font-size: 14px; color: #999; }
+        .dark-room .input-box { background-color: #333; color: #aaa; }
+        .send-btn { background-color: #fee500; width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #000; font-size: 14px; }
+
+        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; overflow-y: auto; flex-grow: 1; background: #fff; padding-bottom: 40px; }
+        .gallery-img { aspect-ratio: 1; background-size: cover; background-position: center; position: relative; }
+        
+        .settings-content { flex-grow: 1; background: #f2f2f7; overflow-y: auto; padding-bottom: 40px; }
+        .setting-group { background: #fff; margin: 20px 15px; border-radius: 12px; overflow: hidden; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; font-size: 15px; }
+        .setting-item:last-child { border-bottom: none; }
+        .setting-label { display: flex; align-items: center; gap: 12px; font-weight: 500;}
+        .setting-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; justify-content: center; align-items: center; color: white; font-size: 14px;}
+        
+        .toggle { width: 50px; height: 30px; background: #34c759; border-radius: 15px; position: relative; }
+        .toggle-circle { width: 26px; height: 26px; background: #fff; border-radius: 50%; position: absolute; top: 2px; right: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: 0.2s; }
+
+        .call-list-view { flex-grow: 1; overflow-y: auto; background-color: #fff; padding-bottom: 50px; }
+        .call-item { display: flex; padding: 15px 20px; align-items: center; border-bottom: 1px solid #f5f5f5; }
+        .call-icon { font-size: 14px; margin-right: 15px; width: 20px; text-align: center; display: flex; justify-content: center; align-items: center; }
+        .call-icon.outgoing { color: #888; }
+        .call-icon.incoming { color: #3b82f6; }
+        .call-icon.missed { color: #ef4444; }
+        .call-info { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+        .call-name { font-weight: 600; font-size: 16px; color: #111; margin-bottom: 2px; }
+        .call-name.missed { color: #ef4444; }
+        .call-detail { font-size: 13px; color: #888; display: flex; align-items: center; gap: 5px;}
+        .call-action { color: #007aff; font-size: 20px; cursor: pointer; padding: 5px; }
+
+        #toast {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: rgba(40,40,40,0.95); color: white; padding: 12px 20px; border-radius: 20px;
+            font-size: 13px; font-weight: 500; text-align: center; width: 85%;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); backdrop-filter: blur(10px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s, transform 0.3s; z-index: 10000;
+        }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        #lockScreen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #111; z-index: 8000; /* status bar(9000), notch(9999) 보다 아래 */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        #lockScreen.unlocked { opacity: 0; pointer-events: none; transform: scale(1.05); }
+        .lock-icon { font-size: 40px; margin-bottom: 20px; color: #fff; }
+        .password-input-container { margin-top: 30px; display: flex; flex-direction: column; align-items: center; width: 80%; }
+        .password-input { 
+            background: transparent; border: none; border-bottom: 2px solid #555; 
+            color: white; text-align: center; font-size: 24px; padding: 10px; width: 100%; outline: none; letter-spacing: 5px;
+        }
+        .password-input:focus { border-bottom-color: #fee500; }
+        .password-hint { font-size: 13px; color: #888; margin-top: 15px; font-weight: 500;}
+        .unlock-btn {
+            margin-top: 30px; padding: 12px 30px; background-color: #fee500; color: #000;
+            border-radius: 20px; font-weight: 800; cursor: pointer; border: none; font-size: 16px; width: 100%;
+            transition: transform 0.1s;
+        }
+        .unlock-btn:active { transform: scale(0.95); }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            20% { transform: translate(-6px, 2px) rotate(-1deg); }
+            40% { transform: translate(6px, -2px) rotate(1deg); }
+            60% { transform: translate(-6px, -2px) rotate(-1deg); }
+            80% { transform: translate(6px, 2px) rotate(1deg); }
+        }
+        .shake { animation: shake 0.1s infinite; } /* 더 빠르고 폭력적인 진동 무한반복 */
+
+        #emergencyAlertOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(150, 0, 0, 0.6); z-index: 10000; /* 시각적 공포를 위한 붉은 안개 효과 */
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        #emergencyAlertOverlay.show { opacity: 1; pointer-events: auto; }
+        
+        #emergencyAlert {
+            width: 85%; background: rgba(250, 250, 250, 0.95); border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; overflow: hidden;
+            transform: scale(1.1); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #emergencyAlertOverlay.show #emergencyAlert { transform: scale(1); }
+        
+        .alert-header { background: #d32f2f; color: white; padding: 12px; font-weight: 800; font-size: 16px; text-align: center; letter-spacing: 2px;}
+        .alert-body { padding: 20px; font-size: 15px; line-height: 1.5; color: #111; font-weight: 500;}
+        .alert-time { font-size: 12px; color: #777; margin-bottom: 8px;}
+        .alert-footer { border-top: 1px solid #ddd; padding: 12px; text-align: center; color: #007aff; font-weight: 700; cursor: pointer; font-size: 16px;}
+        .alert-footer:active { background: #f0f0f0; }
+
+        /* 해킹 경고창 스타일 */
+        #hackingAlertOverlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 10500;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #hackingAlertOverlay.show { opacity: 1; pointer-events: auto; }
+        
+        .hacking-modal {
+            width: 85%; background: #111; border: 2px solid #ef4444; border-radius: 10px;
+            padding: 20px; color: #fff; font-family: monospace;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.4);
+        }
+        .hacking-title {
+            color: #ef4444; font-size: 18px; font-weight: 900; text-align: center; margin-bottom: 15px;
+            animation: textBlink 1s infinite; letter-spacing: 1px;
+        }
+        .hacking-text { font-size: 13px; line-height: 1.7; color: #ddd; margin-bottom: 15px; }
+        .hacking-highlight { color: #ef4444; font-weight: bold; background: rgba(239, 68, 68, 0.2); padding: 2px 4px; border-radius: 3px; }
+        .hacking-btn {
+            width: 100%; background: #ef4444; color: #fff; border: none; padding: 12px;
+            font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 14px;
+        }
+        .hacking-btn:active { background: #dc2626; }
+        @keyframes textBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    </style>
+</head>
+<body>
+
+<div class="phone-frame" id="phoneFrame">
+    <div class="notch"></div>
+    
+    <div class="status-bar" id="statusBar">
+        <span>LTE</span>
+        <div class="flex gap-2">
+            <i class="fa-solid fa-signal"></i>
+            <i class="fa-solid fa-wifi"></i>
+            <i class="fa-solid fa-battery-three-quarters"></i>
+        </div>
+    </div>
+
+    <div id="lockScreen">
+        <i class="fa-solid fa-lock lock-icon"></i>
+        <div style="font-size: 18px; font-weight: 300; letter-spacing: 1px;">비밀번호를 입력하세요</div>
+        <div class="password-input-container">
+            <input type="text" id="pwdInput" class="password-input" oninput="handleInput()" onkeypress="handleEnter(event)" placeholder="한글로 입력" autocomplete="off" spellcheck="false">
+            <div class="password-hint">힌트: [내 새 악세서리]</div>
+        </div>
+    </div>
+
+    <div class="home-screen" id="homeScreen">
+        <div class="app-grid">
+            <div class="app-icon-wrapper" onclick="showToast('보안 정책에 의해 접근이 차단되었습니다.')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><i class="fa-solid fa-cloud"></i></div>
+                <span class="app-name">날씨</span>
+            </div>
+            <div class="app-icon-wrapper" onclick="openApp('galleryApp', true)">
+                <div class="app-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"><i class="fa-solid fa-image"></i></div>
+                <span class="app-name">갤러리</span>
+            </div>
+            <div class="app-icon-wrapper" onclick="showToast('카메라 모듈이 비활성화 되었습니다.')">
+                <div class="app-icon" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);"><i class="fa-solid fa-camera"></i></div>
+                <span class="app-name">카메라</span>
+            </div>
+            <div class="app-icon-wrapper" onclick="openApp('settingsApp', true)">
+                <div class="app-icon" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);"><i class="fa-solid fa-gear"></i></div>
+                <span class="app-name">설정</span>
+            </div>
+        </div>
+
+        <div class="dock">
+            <!-- 전화 앱 연결 -->
+            <div class="app-icon-wrapper" onclick="openApp('phoneApp', true)">
+                <div class="app-icon" style="background: #34c759;"><i class="fa-solid fa-phone"></i></div>
+            </div>
+            <div class="app-icon-wrapper" onclick="openApp('chatApp', true)">
+                <div class="app-icon" style="background: #fee500; color: #3b1e1e; position: relative;">
+                    <i class="fa-solid fa-comment"></i>
+                    <span style="position:absolute; top:-5px; right:-5px; background:red; color:white; font-size:10px; width:18px; height:18px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-weight:bold; border:2px solid rgba(255,255,255,0.2);">5</span>
+                </div>
+            </div>
+            <div class="app-icon-wrapper" onclick="showToast('보안 정책에 의해 브라우저가 차단되었습니다.')">
+                <div class="app-icon" style="background: #007aff;"><i class="fa-solid fa-compass"></i></div>
+            </div>
+            <div class="app-icon-wrapper" onclick="openApp('memoApp', true)">
+                <div class="app-icon" style="background: #ff3b30;"><i class="fa-solid fa-envelope"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-window" id="galleryApp">
+        <div class="app-header">
+            <i class="fa-solid fa-chevron-left back-btn" onclick="goHome()"></i>
+            <span>최근 항목</span>
+        </div>
+        <div class="gallery-grid">
+            <div class="gallery-img" style="background-image: url('https://images.unsplash.com/photo-1580519542036-ed47690ce456?q=80&w=400&auto=format&fit=crop');">
+                <div class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">정치자금_50억.jpg</div>
+            </div>
+            <div class="gallery-img" style="background-image: url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=400&auto=format&fit=crop'); filter: grayscale(30%);">
+                <div class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">광명정신의료원_전경.jpg</div>
+            </div>
+            <div class="gallery-img" style="background-image: url('https://images.unsplash.com/photo-1506541525049-74d3fb0cc836?q=80&w=400&auto=format&fit=crop'); filter: contrast(120%);">
+                <div class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">미행_차강혁.jpg</div>
+                <i class="fa-solid fa-lock absolute top-1 right-1 text-white text-xs bg-red-500/80 p-1 rounded-full"></i>
+            </div>
+            <div class="gallery-img" style="background-image: url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=400&auto=format&fit=crop'); filter: brightness(90%);">
+                <div class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] px-1 rounded">혼인신고서_원본.pdf</div>
+            </div>
+            <div class="gallery-img bg-gray-200 flex justify-center items-center flex-col text-gray-400 text-xs">
+                <i class="fa-regular fa-image text-2xl mb-1"></i>암호화됨
+            </div>
+        </div>
+    </div>
+
+    <div class="app-window" id="settingsApp">
+        <div class="app-header">
+            <i class="fa-solid fa-chevron-left back-btn" onclick="goHome()"></i>
+            <span>설정</span>
+        </div>
+        <div class="settings-content">
+            <div class="setting-group flex items-center p-4 gap-4">
+                <div class="w-14 h-14 bg-gray-300 rounded-full flex justify-center items-center text-gray-500 text-2xl"><i class="fa-solid fa-user-secret"></i></div>
+                <div>
+                    <div class="font-bold text-lg">표정원 (VIP)</div>
+                    <div class="text-xs text-red-500 font-bold mt-1">보안 모드 활성화됨</div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="setting-item">
+                    <div class="setting-label"><div class="setting-icon" style="background:#007aff;"><i class="fa-solid fa-shield-halved"></i></div>이중 암호화</div>
+                    <div class="toggle"><div class="toggle-circle"></div></div>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-label"><div class="setting-icon" style="background:#34c759;"><i class="fa-solid fa-location-dot"></i></div>위치 추적 차단</div>
+                    <div class="toggle"><div class="toggle-circle"></div></div>
+                </div>
+                <div class="setting-item" onclick="showToast('기기 초기화 대기중...')">
+                    <div class="setting-label"><div class="setting-icon" style="background:#ff3b30;"><i class="fa-solid fa-bomb"></i></div>긴급 데이터 파기</div>
+                    <i class="fa-solid fa-chevron-right text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-window" id="phoneApp">
+        <div class="app-header">
+            <i class="fa-solid fa-chevron-left back-btn" onclick="goHome()"></i>
+            <span>최근 통화</span>
+        </div>
+        <div class="call-list-view">
+            <div class="call-item">
+                <div class="call-icon missed"><i class="fa-solid fa-phone-slash"></i></div>
+                <div class="call-info">
+                    <div class="call-name missed">최실장 (비서실)</div>
+                    <div class="call-detail">부재중 전화</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+            
+            <div class="call-item">
+                <div class="call-icon incoming"><i class="fa-solid fa-phone-arrow-down-left"></i></div>
+                <div class="call-info">
+                    <div class="call-name">최실장 (비서실)</div>
+                    <div class="call-detail">수신 전화</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+
+            <div class="call-item">
+                <div class="call-icon outgoing"><i class="fa-solid fa-phone-arrow-up-right"></i></div>
+                <div class="call-info">
+                    <div class="call-name">곽원장 (곡성)</div>
+                    <div class="call-detail">발신 전화 (암호화 연결)</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+
+            <div class="call-item">
+                <div class="call-icon incoming"><i class="fa-solid fa-phone-arrow-down-left"></i></div>
+                <div class="call-info">
+                    <div class="call-name">김실장 (흥신소)</div>
+                    <div class="call-detail">수신 전화</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+            
+            <div class="call-item">
+                <div class="call-icon outgoing"><i class="fa-solid fa-phone-arrow-up-right"></i></div>
+                <div class="call-info">
+                    <div class="call-name">여러분당 대표님</div>
+                    <div class="call-detail">발신 전화</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+            
+            <div class="call-item">
+                <div class="call-icon outgoing"><i class="fa-solid fa-phone-arrow-up-right"></i></div>
+                <div class="call-info">
+                    <div class="call-name">윤세린 (아내)</div>
+                    <div class="call-detail">발신 전화</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+            
+            <div class="call-item">
+                <div class="call-icon missed"><i class="fa-solid fa-phone-slash"></i></div>
+                <div class="call-info">
+                    <div class="call-name missed">전기자 (K일보)</div>
+                    <div class="call-detail">부재중 전화 (2회 연속)</div>
+                </div>
+                <i class="fa-solid fa-circle-info call-action"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-window" id="chatApp">
+        <div class="app-header justify-between">
+            <div class="flex items-center">
+                <i class="fa-solid fa-chevron-left back-btn" onclick="goHome()"></i>
+                <span>채팅</span>
+            </div>
+            <i class="fa-solid fa-magnifying-glass text-xl text-gray-800"></i>
+        </div>
+        
+        <div class="chat-list-view">
+            <!-- 1. 흥신소 -->
+            <div class="chat-item" onclick="openChat('heungsinso')">
+                <div class="profile-pic" style="background-color: #333;"><i class="fa-solid fa-user-secret"></i></div>
+                <div class="chat-preview">
+                    <div class="chat-name">김실장 (흥신소)</div>
+                    <div class="chat-last-msg">말도 안 되는 소리 하지 말고 똑바로 다시 조사해. 차강혁 그 새끼 털 먼지 하나라도 무조건 찾아내고!</div>
+                </div>
+                <div class="chat-meta"><span class="unread-badge">1</span></div>
+            </div>
+
+            <!-- 2. 여러분당 대표님 -->
+            <div class="chat-item" onclick="openChat('representative')">
+                <div class="profile-pic" style="background-color: #1e3a8a;"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="chat-preview">
+                    <div class="chat-name">여러분당 대표님</div>
+                    <div class="chat-last-msg">근데 표 위원장, 부인(윤세린) 문제는 뒤탈 없게 확실히 정리한 거 맞지?</div>
+                </div>
+                <div class="chat-meta"><span class="unread-badge">2</span></div>
+            </div>
+
+            <!-- 3. 비서실장 -->
+            <div class="chat-item" onclick="openChat('secretary')">
+                <div class="profile-pic" style="background-color: #475569;"><i class="fa-solid fa-user-tie"></i></div>
+                <div class="chat-preview">
+                    <div class="chat-name">최실장 (비서실)</div>
+                    <div class="chat-last-msg">명원장 쪽에도 입단속 철저히 시켜. 스캔들 하나라도 터지면 가만 안 둔다고 전해.</div>
+                </div>
+                <div class="chat-meta"></div>
+            </div>
+            
+            <!-- 4. 쇼윈도 아내 (윤세린) -->
+            <div class="chat-item" onclick="openChat('wife')">
+                <div class="profile-pic" style="background-color: #e11d48;"><i class="fa-solid fa-ring"></i></div>
+                <div class="chat-preview">
+                    <div class="chat-name">윤세린 (아내)</div>
+                    <div class="chat-last-msg">역겨운 새끼... 말 걸지 말고 샵으로 차나 보내.</div>
+                </div>
+                <div class="chat-meta"></div>
+            </div>
+
+            <!-- 5. K일보 전기자 -->
+            <div class="chat-item" onclick="openChat('reporter')">
+                <div class="profile-pic" style="background-color: #059669;"><i class="fa-solid fa-pen-nib"></i></div>
+                <div class="chat-preview">
+                    <div class="chat-name">전기자 (K일보)</div>
+                    <div class="chat-last-msg">잘 좀 생각해보시고, 오늘 밤 안으로 답을 주셨으면 합니다. 저도 언제까지 막고 있을 수만은 없어서요.</div>
+                </div>
+                <div class="chat-meta"><span class="unread-badge">3</span></div>
+            </div>
+        </div>
+
+        <div class="chat-room dark-room" id="chat_heungsinso" style="background-color: #222;">
+            <div class="app-header" style="background-color: #222; color: white; border-bottom: 1px solid #333;">
+                <i class="fa-solid fa-chevron-left back-btn" style="color: white;" onclick="closeChat()"></i>
+                <span class="chat-room-title">김실장 (흥신소)</span>
+            </div>
+            <div class="chat-messages">
+                <div class="msg-row me">
+                    <div class="msg-bubble">시키는건 잘 하고 있나?</div>
+                    <div class="msg-info"><span class="msg-read">1</span></div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #444;"><i class="fa-solid fa-user-secret"></i></div>
+                    <div>
+                        <div class="other-name">김실장 (흥신소)</div>
+                        <div class="msg-bubble">네, 위원장님 지시대로 당일 윤세린 사모님 끌고 나갈 때 찍힌 영상은 원본 서버까지 다 날렸습니다. 흔적 없습니다.</div>
+                    </div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #444;"><i class="fa-solid fa-user-secret"></i></div>
+                    <div>
+                        <div class="other-name">김실장 (흥신소)</div>
+                        <div class="msg-bubble">위원장님, 지시하신 차강혁 뒷조사 말입니다... 파면 팔수록 이상합니다. 과거 기록이 거의 백지상태입니다. 누군가 의도적으로 싹 지운 것 같습니다.</div>
+                    </div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #444;"><i class="fa-solid fa-user-secret"></i></div>
+                    <div>
+                        <div class="other-name">김실장 (흥신소)</div>
+                        <div class="msg-bubble">그리고 김연정 뒷조사 건 말인데요, 호적이나 과거 행적을 깊게 추적해보니 '김연정'이 아니라 '명연정'으로 파악되는 단서들이 자꾸 나옵니다. 혹시 출생 쪽에...</div>
+                    </div>
+                </div>
+
+                <div class="msg-row me">
+                    <div class="msg-bubble">말도 안 되는 소리 하지 말고 똑바로 다시 조사해. 차강혁 그 새끼 털 먼지 하나라도 무조건 찾아내고!</div>
+                    <div class="msg-info"></div>
+                </div>
+            </div>
+            <div class="input-area">
+                <i class="fa-solid fa-plus text-gray-500 text-xl"></i>
+                <div class="input-box">메시지 입력</div>
+                <div class="send-btn"><i class="fa-solid fa-arrow-up"></i></div>
+            </div>
+        </div>
+
+        <div class="chat-room" id="chat_representative">
+            <div class="app-header">
+                <i class="fa-solid fa-chevron-left back-btn" onclick="closeChat()"></i>
+                <span class="chat-room-title">여러분당 대표님</span>
+            </div>
+            <div class="chat-messages">
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #1e3a8a;"><i class="fa-solid fa-building-columns"></i></div>
+                    <div>
+                        <div class="other-name">여러분당 대표님</div>
+                        <div class="msg-bubble">표 위원장, 지난번에 건네준 정치 자금 50억, 캠프에서 아주 유용하게 썼소. 덕분에 당내 여론도 표 위원장 쪽으로 많이 기울었어.</div>
+                    </div>
+                </div>
+
+                <div class="msg-row me">
+                    <div class="msg-bubble">감사합니다 대표님. 이번 종로구 공천권만 확실히 약속해 주신다면 남은 선거 자금도 문제없이 조달하겠습니다.</div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #1e3a8a;"><i class="fa-solid fa-building-columns"></i></div>
+                    <div>
+                        <div class="other-name">여러분당 대표님</div>
+                        <div class="msg-bubble">당연하지. 다음 주 최고위원회에서 '평창동지역위원장 표창장' 건을 통과시킬 예정이오. 미리 언론 플레이 좀 해두고.</div>
+                    </div>
+                </div>
+                
+                <div class="msg-row me">
+                    <div class="msg-bubble">성은에 망극합니다 대표님. 실망시켜드리지 않겠습니다.</div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #1e3a8a;"><i class="fa-solid fa-building-columns"></i></div>
+                    <div>
+                        <div class="other-name">여러분당 대표님</div>
+                        <div class="msg-bubble">근데 표 위원장, 부인(윤세린) 문제는 뒤탈 없게 확실히 정리한 거 맞지? 선거철에 집안 문제 터지면 공천이고 뭐고 다 날아가는 거 알지?</div>
+                    </div>
+                </div>
+
+                <div class="msg-row me">
+                    <div class="msg-bubble">문제 생기면 바로 이송될 수 있게 곽원장하고 이야기 잘 해놓았습니다. 염려 놓으십시오.</div>
+                </div>
+            </div>
+            <div class="input-area">
+                <i class="fa-solid fa-plus text-gray-400 text-xl"></i>
+                <div class="input-box">메시지 입력</div>
+                <div class="send-btn"><i class="fa-solid fa-arrow-up"></i></div>
+            </div>
+        </div>
+
+        <div class="chat-room" id="chat_secretary" style="background-color: #9bbbd4;">
+            <div class="app-header" style="background-color: #9bbbd4;">
+                <i class="fa-solid fa-chevron-left back-btn" onclick="closeChat()"></i>
+                <span class="chat-room-title">최실장 (비서실)</span>
+            </div>
+            <div class="chat-messages">
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #475569;"><i class="fa-solid fa-user-tie"></i></div>
+                    <div>
+                        <div class="other-name">최실장 (비서실)</div>
+                        <div class="msg-bubble">위원장님, 큰일 났습니다. 얼마 전 화재가 난 광명정신의료원 건으로 경찰에서 출석 통보가 왔습니다.</div>
+                    </div>
+                </div>
+                
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #475569;"><i class="fa-solid fa-user-tie"></i></div>
+                    <div>
+                        <div class="other-name">최실장 (비서실)</div>
+                        <div class="msg-bubble">단순 화재인 줄 알았는데, 현장에서 발견된 명원장 시신에서 장기적출 흔적이 나왔다고 합니다. 경찰이 배후를 캐다가 2022년에 우리가 '발전 기금' 명목으로 넘겼던 2.5억 원과 돈세탁 정황까지 전부 파악했습니다.</div>
+                    </div>
+                </div>
+
+                <div class="msg-row me">
+                    <div class="msg-bubble">미친 새끼들 아니야! 꼬리 자르기 다 끝난 거 아니었어? 안의사 중국으로 보냈잖아!</div>
+                    <div class="msg-info"><span class="msg-read">1</span></div>
+                </div>
+                
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #475569;"><i class="fa-solid fa-user-tie"></i></div>
+                    <div>
+                        <div class="other-name">최실장 (비서실)</div>
+                        <div class="msg-bubble">안의사는 중국으로 빼돌렸지만, 현지 'SHH'라는 조직에 붙잡혀 감금된 상태라고 합니다. 게다가 장기적출 살인 사건으로 전환되면서 수사 강도가 완전히 달라졌습니다. 법인 계좌 거래 내역이 너무 선명해서 검찰로 넘어가기 전에 손을 써야 할 것 같습니다.</div>
+                    </div>
+                </div>
+                
+                <div class="msg-row me">
+                    <div class="msg-bubble">입단속 철저히 해. 경찰청장 라인 당장 연결하고. 선거 코앞인데 스캔들 터지면 다 끝장이야.</div>
+                </div>
+            </div>
+            <div class="input-area">
+                <i class="fa-solid fa-plus text-gray-400 text-xl"></i>
+                <div class="input-box">메시지 입력</div>
+                <div class="send-btn"><i class="fa-solid fa-arrow-up"></i></div>
+            </div>
+        </div>
+
+        <div class="chat-room" id="chat_wife" style="background-color: #fce4ec;">
+            <div class="app-header" style="background-color: #fce4ec;">
+                <i class="fa-solid fa-chevron-left back-btn" onclick="closeChat()"></i>
+                <span class="chat-room-title">윤세린 (아내)</span>
+            </div>
+            <div class="chat-messages">
+                <div class="msg-row me">
+                    <div class="msg-bubble">오늘 저녁 여성인권포럼. 늦지 않게 와라. 기자들 깔렸으니까 표정 관리 똑바로 하고.</div>
+                    <div class="msg-info"><span class="msg-read">1</span></div>
+                </div>
+                
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #e11d48;"><i class="fa-solid fa-ring"></i></div>
+                    <div>
+                        <div class="other-name">윤세린 (아내)</div>
+                        <div class="msg-bubble">명령하지 마. 카메라 앞에서 역겨운 잉꼬부부 연기나 적당히 해. 소름 돋으니까.</div>
+                    </div>
+                </div>
+                
+                <div class="msg-row me">
+                    <div class="msg-bubble">다음엔 대선이야. 그때까지만 닥치고 웃으면서 참아. 니 그 잘난 '장군 아버지' 명예에 똥칠하고 싶지 않으면.</div>
+                    <div class="msg-info"></div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #e11d48;"><i class="fa-solid fa-ring"></i></div>
+                    <div>
+                        <div class="other-name">윤세린 (아내)</div>
+                        <div class="msg-bubble">그 인간 얘기 내 앞에서 꺼내지 마. 그 숨막히는 집구석에서 내가 손목까지 그어가며 어떻게 버텼는지 다 알면서, 이제 와서 날 그걸로 협박해?</div>
+                    </div>
+                </div>
+                
+                <div class="msg-row me">
+                    <div class="msg-bubble">그러니까 피차 과거 들춰서 피곤하게 굴지 말자고. 니 그 자해 흉터 가려주려고 매번 두꺼운 명품 팔찌 사다 바치는 내 수고도 좀 알아줘야지. 장군 집안에서 쓸모없이 버려진 식충이 거둬준 게 누군데. 헛소리 그만하고 시간 맞춰서 나오기나 해.</div>
+                    <div class="msg-info"></div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #e11d48;"><i class="fa-solid fa-ring"></i></div>
+                    <div>
+                        <div class="other-name">윤세린 (아내)</div>
+                        <div class="msg-bubble">역겨운 새끼... 말 걸지 말고 샵으로 차나 보내.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-area">
+                <i class="fa-solid fa-plus text-gray-400 text-xl"></i>
+                <div class="input-box">메시지 입력</div>
+                <div class="send-btn"><i class="fa-solid fa-arrow-up"></i></div>
+            </div>
+        </div>
+
+        <div class="chat-room" id="chat_reporter" style="background-color: #d1d5db;">
+            <div class="app-header" style="background-color: #d1d5db;">
+                <i class="fa-solid fa-chevron-left back-btn" onclick="closeChat()"></i>
+                <span class="chat-room-title">전기자 (K일보)</span>
+            </div>
+            <div class="chat-messages">
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #059669;"><i class="fa-solid fa-pen-nib"></i></div>
+                    <div>
+                        <div class="other-name">전기자 (K일보)</div>
+                        <div class="msg-bubble">표위원장님, 바쁘실 텐데 실례합니다. 다름이 아니라 광명정신의료원 자금 세탁 관련해서 꽤 구체적인 제보와 증거 자료가 저희 데스크로 들어왔습니다.</div>
+                    </div>
+                </div>
+
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #059669;"><i class="fa-solid fa-pen-nib"></i></div>
+                    <div>
+                        <div class="other-name">전기자 (K일보)</div>
+                        <div class="msg-bubble">2022년도에 2.5억을 기부하셨더군요. 근데 명원장 사망 사건에 불법 장기적출까지 연루된 거라, 이게 기사화되면 파장이 엄청날 것 같습니다.</div>
+                    </div>
+                </div>
+                
+                <div class="msg-row other">
+                    <div class="msg-profile" style="background-color: #059669;"><i class="fa-solid fa-pen-nib"></i></div>
+                    <div>
+                        <div class="other-name">전기자 (K일보)</div>
+                        <div class="msg-bubble">그래도 위원장님이라 제가 일단 기사 송고 막고 엠바고 걸어둔 상태입니다. 잘 좀 생각해보시고, 오늘 밤 안으로 답을 주셨으면 합니다. 저도 언제까지 막고 있을 수만은 없어서요.</div>
+                    </div>
+                </div>
+
+                <div class="msg-row me">
+                    <div class="msg-bubble">전기자님, 오랜만이네요. 이런 오해가 생겨서 유감입니다. 기사 막아주신 건 잊지 않겠습니다. 오늘 저녁에 조용히 한번 뵙지요. 늘 마시던 곳으로 예약해 두겠습니다.</div>
+                    <div class="msg-info"></div>
+                </div>
+            </div>
+            <div class="input-area">
+                <i class="fa-solid fa-plus text-gray-500 text-xl"></i>
+                <div class="input-box">메시지 입력</div>
+                <div class="send-btn"><i class="fa-solid fa-arrow-up"></i></div>
+            </div>
+        </div>
+
+    </div> <!-- app-window (chatApp) 닫기 -->
+
+    <div class="app-window" id="memoApp" style="background-color: #f2f2f7;">
+        <div class="app-header">
+            <i class="fa-solid fa-chevron-left back-btn" onclick="goHome()"></i>
+            <span>보안 메일 (장부)</span>
+        </div>
+        <div class="flex-grow overflow-y-auto p-4 pb-12">
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+                <div class="text-xs font-bold text-red-500 mb-2"><i class="fa-solid fa-lock"></i> 종단간 암호화 보관함</div>
+                <h2 class="text-xl font-extrabold text-gray-900 mb-1">[극비] 비자금 및 돈세탁 장부</h2>
+                <div class="text-[11px] text-gray-500 mb-4 flex flex-col gap-1 border-b border-gray-100 pb-3">
+                    <span><i class="fa-solid fa-location-dot"></i> 최종 작성 위치: <b>서울특별시 종로구 평창30길 27</b></span>
+                    <span><i class="fa-regular fa-clock"></i> 클라우드 동기화 완료</span>
+                </div>
+                
+                <div class="text-[13px] text-gray-800 leading-relaxed font-medium">
+                    <p class="mb-3 text-red-600 font-bold bg-red-50 p-2 rounded">※ 경고: 이 메모가 유출되면 나 혼자 모든 죄를 독박쓴다. 조만간 원본 USB와 함께 완전히 파기할 것.</p>
+                    
+                    <p class="mb-1 font-bold text-gray-900">[여러분당 대표 50억 전달]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        대표 측에서 흔적을 지우려고 전액 현금으로 요구함. 내 차명 계좌에서 50억을 인출한 기록은 남아있는데, 대표에게 전달했다는 증빙이나 영수증이 전혀 없다. 만약 꼬리가 밟히면 대표는 무조건 발뺌할 것이고, 불법 정치자금 횡령 주동자로 나 혼자 다 뒤집어써야 함. 미친 짓이었다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[광명정신의료원 명원장 2.5억 세탁]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        장기적출 관련 더러운 돈을 세탁해 주는 대가로 2.5억을 받음. 근데 하필 내 실명과 연결된 법인으로 돈이 다이렉트로 들어와 버림. 경찰이 계좌 까는 순간, 살인방조 및 자금세탁 혐의 1순위 타겟은 무조건 내가 된다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[안의사 도피 자금]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        중국 SHH로 도피시킨 안의사 체재비 3천만 원도 내 비서실장 계좌를 거쳐 갔다. 꼬리 자르기를 완벽하게 했다고 생각했는데, 장부 내역을 다시 볼수록 빠져나갈 구멍이 내 쪽에만 없다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[경찰청 정보국장 스폰서 비용]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        정기적으로 상납한 골프 접대비와 현금 1억. 수사 무마를 위해 썼지만, 돈의 출처는 내 차명계좌뿐이고 정보국장은 철저히 현금만 받았다. 뇌물 공여로 걸리면 저놈은 빠져나가고 나만 구속된다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[차강혁 미행 및 흥신소 의뢰비]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        김실장에게 지급한 5천만 원. 당 선거 자금에서 빼돌려 썼다. 회계 감사가 들어오면 횡령으로 빼도 박도 못하게 내 목을 죈다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[K일보 전기자 입막음 현금]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        엠바고를 대가로 매달 꽂아준 1천만 원. 이 새끼가 요즘 더 큰 액수를 요구한다. 통화 녹음이라도 까발려지면 언론 매수 혐의까지 추가된다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[곡성 곽원장 비밀 연구소 지원금]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        국회 보건복지위 예산을 우회해서 곽원장의 불법 백신 연구소로 흘려보낸 10억. 예산 전용 및 불법 인체실험 지원. 꼬리가 밟히면 국회의원직 박탈은 물론이고 반인륜 범죄로 묶인다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[윤세린(아내) 언론 통제용 비자금]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        그 미친 여자가 자해소동 벌일 때마다 병원장과 찌라시 기자들 입 막으려고 쓴 돈이 도합 3억이다. 전부 내 개인 채무로 잡혀 있다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[명원장 장기적출 'VIP' 고객 명단 관리비]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        VIP들에게 뒷돈을 받고 명원장과 연결해 준 수수료 4억. VIP들은 모두 차명이나 현금으로 거래해서 증거가 없고, 알선 브로커 역할인 내 통장 기록만 더럽게 남아있다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[중국 SHH 조직 연계 자금]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        안의사를 빼돌리느라 SHH에 환치기로 보낸 2억. 경찰이 이 루트를 파헤치면 단순 뇌물이 아니라 범죄단체 조직 및 외환관리법 위반까지 걸린다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[종로구 재개발 조합장 매수]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        공천을 앞두고 지역구 관리 차원에서 조합장에게 건넨 2억. 차명으로 준 것도 아니고, 내 지역구 사무실 계좌에서 나갔다. 선거법 위반의 스모킹 건이다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[가짜 혼인신고서 위조 브로커 비용]</p>
+                    <p class="mb-3 pl-2 border-l-2 border-gray-300">
+                        김연정을 내 호적에 묶어두기 위해 구청 직원을 매수하고 브로커에게 쓴 3천만 원. 공문서위조 교사 혐의다.
+                    </p>
+
+                    <p class="mb-1 font-bold text-gray-900">[백신 임상시험 은폐용 연구진 매수]</p>
+                    <p class="mb-4 pl-2 border-l-2 border-gray-300">
+                        부작용으로 사망한 피실험자들을 무연고자로 둔갑시켜 화장 처리하는 데 쓴 뒷돈. 살인 은폐 방조죄다. 이 모든 미친 짓을 벌였는데 모든 물증이 나 하나만을 가리키고 있다.
+                    </p>
+
+                    <p class="mt-4 pt-3 border-t border-gray-200 text-sm font-bold text-red-600">
+                        결론: 수사망이 좁혀오기 전에, 평창30길 27 자택 금고에 있는 실물 장부와 이 클라우드 메모를 무조건 날려야 한다. 이대로면 나 혼자 모든 죄를 독박 쓰고 무기징역이다.<br><br>
+                        하지만... 나 혼자 순순히 죽진 않는다! 내 새로운 악세서리 '김연정'의 피로 완벽한 백신만 완성되면 상황은 180도 역전된다. 그때는 법이고 정치고 다 필요 없다. 내가 세계의 왕이 된다! 이 벌레 같은 놈들, 전부 내 발밑에 기어다니게 만들어 주마.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="home-indicator" onclick="goHome()"></div>
+
+    <div id="toast">메시지</div>
+
+    <div id="emergencyAlertOverlay">
+        <div id="emergencyAlert">
+            <div class="alert-header"><i class="fa-solid fa-triangle-exclamation"></i> 긴급재난문자</div>
+            <div class="alert-body">
+                <div class="alert-time">오늘 19:17</div>
+                [서울특별시청]<br>
+                금일 감염자 서울 전역 다수 출현.<br>시민 여러분께서는 즉시 안전한 실내로 대피하시고 외부 출입을 절대 삼가시기 바랍니다.
+            </div>
+            <div class="alert-footer" onclick="closeEmergencyAlert()">확인</div>
+        </div>
+    </div>
+
+    <!-- 해킹 경고 모달 -->
+    <div id="hackingAlertOverlay">
+        <div class="hacking-modal">
+            <div class="hacking-title"><i class="fa-solid fa-skull-crossbones"></i> CRITICAL WARNING</div>
+            <div class="hacking-text">
+                승인되지 않은 기기가 현재 기기의 종단간 암호화를 우회하여 <b>백그라운드 동기화</b>를 시도하고 있습니다.<br><br>
+                > 접근 방식: <span class="hacking-highlight">로컬 Wi-Fi 무단 연결</span><br>
+                > 추적된 위치: <span class="hacking-highlight">평창 30길 27</span><br>
+                > 상태: <span class="text-red-400">데이터 미러링 진행 중... (87%)</span>
+            </div>
+            <button class="hacking-btn" onclick="closeHackingAlert()">강제 연결 차단 (응답 없음)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const statusBar = document.getElementById('statusBar');
+    let hackingTimeout; // 해킹 타이머 변수
+
+    // 앱 열기 (메인 화면 -> 특정 앱)
+    function openApp(appId, needsDarkStatusBar = false) {
+        document.getElementById(appId).classList.add('active');
+        document.querySelector('.phone-frame').classList.add('app-open');
+        if (needsDarkStatusBar) statusBar.classList.add('dark-text');
+
+        // 보안 메일(장부) 앱을 열었을 때 10초 뒤 해킹 메시지 띄우기
+        if (appId === 'memoApp') {
+            hackingTimeout = setTimeout(() => {
+                document.getElementById('hackingAlertOverlay').classList.add('show');
+            }, 10000); // 10000ms = 10초
+        }
+    }
+
+    // 홈으로 가기 (모든 앱 닫기)
+    function goHome() {
+        document.querySelectorAll('.app-window').forEach(app => app.classList.remove('active'));
+        document.querySelector('.phone-frame').classList.remove('app-open');
+        statusBar.classList.remove('dark-text');
+        
+        // 홈으로 가면 해킹 타이머 취소 (10초 지나기 전에 나가면 안 뜸)
+        clearTimeout(hackingTimeout);
+
+        setTimeout(() => closeChat(), 300);
+    }
+
+    // 해킹 알림 닫기
+    function closeHackingAlert() {
+        document.getElementById('hackingAlertOverlay').classList.remove('show');
+    }
+
+    // 특정 채팅방 열기
+    function openChat(chatId) {
+        document.getElementById('chat_' + chatId).classList.add('active');
+        if(chatId === 'heungsinso') statusBar.classList.remove('dark-text');
+    }
+
+    // 채팅방 닫기 (채팅 목록으로 이동)
+    function closeChat() {
+        document.querySelectorAll('.chat-room').forEach(room => room.classList.remove('active'));
+        statusBar.classList.add('dark-text');
+    }
+
+    // 토스트 알림 띄우기
+    let toastTimeout;
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    let audioCtx;
+    function playEmergencySound() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 소름끼치고 고막을 찌르는 실제 재난 경보음 (EAS) 극한 데시벨 구현
+            const playTerrifyingBeep = (startTime, duration) => {
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                // 가장 날카롭고 불안감을 주는 파형 조합
+                osc1.type = 'sawtooth';
+                osc2.type = 'square';
+                
+                // 불협화음을 발생시켜 심리적 압박감 극대화 (실제 경보음 주파수 대역)
+                osc1.frequency.setValueAtTime(853, audioCtx.currentTime + startTime);
+                osc2.frequency.setValueAtTime(960, audioCtx.currentTime + startTime);
+                
+                // 볼륨 최대치(1.0), 기존의 똥땅거리는 감쇄(decay) 없이 꽉 채운 지속음으로 고막 타격
+                gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime + startTime);
+                gainNode.gain.setValueAtTime(1.0, audioCtx.currentTime + startTime + duration - 0.05);
+                gainNode.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+                
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc1.start(audioCtx.currentTime + startTime);
+                osc2.start(audioCtx.currentTime + startTime);
+                osc1.stop(audioCtx.currentTime + startTime + duration);
+                osc2.stop(audioCtx.currentTime + startTime + duration);
+            };
+
+            // 길고 고막을 찌르는 3번의 연속 사이렌 펄스 (삐이이이익!!!! 삐이이이익!!!!)
+            playTerrifyingBeep(0, 1.2);
+            playTerrifyingBeep(1.5, 1.2);
+            playTerrifyingBeep(3.0, 1.5);
+            
+            // 기기 진동 효과 (CSS 흔들림) 길이 연장 (경보음이 울리는 내내 미친듯이 떨림)
+            const phoneFrame = document.getElementById('phoneFrame');
+            phoneFrame.classList.add('shake');
+            setTimeout(() => phoneFrame.classList.remove('shake'), 4500);
+
+        } catch(e) {
+            console.log("Audio not supported");
+        }
+    }
+
+    function closeEmergencyAlert() {
+        document.getElementById('emergencyAlertOverlay').classList.remove('show');
+    }
+
+    function checkPassword() {
+        const pwdInput = document.getElementById('pwdInput');
+        const pwd = pwdInput.value.trim();
+        
+        if (pwd === '김연정') {
+            document.getElementById('lockScreen').classList.add('unlocked');
+            pwdInput.blur(); // 키보드 숨기기
+            
+            // 잠금 해제 후 1초 뒤 재난문자 트리거
+            setTimeout(() => {
+                document.getElementById('emergencyAlertOverlay').classList.add('show');
+                playEmergencySound();
+            }, 1000);
+            
+        } else {
+            const lockScreen = document.getElementById('lockScreen');
+            lockScreen.classList.add('shake');
+            pwdInput.value = '';
+            showToast('비밀번호가 일치하지 않습니다.');
+            setTimeout(() => lockScreen.classList.remove('shake'), 400);
+        }
+    }
+
+    // 비밀번호 실시간 감지 (완성 즉시 자동 해제)
+    function handleInput() {
+        const pwdInput = document.getElementById('pwdInput');
+        if (pwdInput.value.trim() === '김연정') {
+            checkPassword();
+        }
+    }
+
+    // 엔터키로 오답 확인 지원
+    function handleEnter(e) {
+        if (e.key === 'Enter') {
+            checkPassword();
+        }
+    }
+</script>
+
+</body>
+</html>
