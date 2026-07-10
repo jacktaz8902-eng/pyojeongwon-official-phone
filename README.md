@@ -4,6 +4,14 @@
 
 **데모:** https://jacktaz8902-eng.github.io/pyojeongwon-official-phone/
 
+## QR 코드
+
+<img src="qr.png" width="220" alt="데모 페이지 QR 코드">
+
+위 QR을 스캔하면 데모 페이지로 이동합니다. URL이 이미지 안에 직접 인코딩된 정적 QR이라, 단축링크나 외부 QR 서비스를 거치지 않습니다. 저장소 주소가 바뀌지 않는 한 이 QR은 영구히 동작합니다.
+
+인쇄용 벡터 파일은 [`qr.svg`](qr.svg), 비트맵은 [`qr.png`](qr.png) (1000×1000)를 쓰세요. 오류 정정 레벨 H로 생성해서, 코드 면적의 약 30%가 가려지거나 손상돼도 인식됩니다.
+
 ## 구성
 
 단일 파일(`index.html`)로 동작하며, Tailwind CSS와 Font Awesome을 CDN으로 불러옵니다. 별도의 빌드 과정은 없습니다.
