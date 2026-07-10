@@ -204,12 +204,26 @@
         }
         .password-input:focus { border-bottom-color: #fee500; }
         .password-hint { font-size: 13px; color: #888; margin-top: 15px; font-weight: 500;}
+        .password-input:disabled { opacity: 0.35; }
+
+        .password-warning {
+            margin-top: 16px; min-height: 20px; text-align: center; line-height: 1.4;
+            font-size: 14px; font-weight: 800; color: #ef4444; letter-spacing: -0.3px;
+        }
+        .password-warning.show { animation: textBlink 0.9s 3; }
+
+        .lockout-msg {
+            margin-top: 14px; text-align: center; font-size: 14px; font-weight: 700;
+            color: #fbbf24; font-variant-numeric: tabular-nums;
+        }
+
         .unlock-btn {
             margin-top: 30px; padding: 12px 30px; background-color: #fee500; color: #000;
             border-radius: 20px; font-weight: 800; cursor: pointer; border: none; font-size: 16px; width: 100%;
             transition: transform 0.1s;
         }
         .unlock-btn:active { transform: scale(0.95); }
+        .unlock-btn:disabled { background-color: #444; color: #888; cursor: not-allowed; }
         @keyframes shake {
             0%, 100% { transform: translate(0, 0); }
             20% { transform: translate(-6px, 2px) rotate(-1deg); }
@@ -274,17 +288,19 @@
         @media (max-width: 640px), (max-height: 500px) {
             body {
                 display: block;
-                position: fixed;
-                inset: 0;
                 background: #000;
                 background-image: none;
-                overscroll-behavior: none;
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .phone-frame {
                 width: 100%;
+                /* svh = 브라우저 툴바가 보이는 상태의 높이. 툴바에 가려 잘리는 일이
+                   없고, 툴바가 숨으면 남는 공간만큼 페이지를 위아래로 밀 수 있다. */
                 height: 100vh;
-                height: 100dvh;
+                height: 100svh;
                 border: none;
                 border-radius: 0;
                 box-shadow: none;
@@ -358,6 +374,9 @@
         <div class="password-input-container">
             <input type="text" id="pwdInput" class="password-input" oninput="handleInput()" onkeypress="handleEnter(event)" placeholder="한글로 입력" autocomplete="off" spellcheck="false">
             <div class="password-hint">힌트: [내 새 악세서리]</div>
+            <div class="password-warning" id="pwdWarning"></div>
+            <button type="button" class="unlock-btn" id="unlockBtn" onclick="checkPassword()">확인</button>
+            <div class="lockout-msg" id="lockoutMsg"></div>
         </div>
     </div>
 
@@ -1059,36 +1078,106 @@
         document.getElementById('emergencyAlertOverlay').classList.remove('show');
     }
 
+    const MAX_ATTEMPTS = 3;
+    const LOCKOUT_MS = 2 * 60 * 1000;
+    const WRONG_PWD_WARNING = '내 새로운 악세서리를 모르나?<br>너 누구야!';
+
+    // 새로고침으로 잠금을 우회하지 못하도록 만료 시각을 저장한다
+    let failCount = Number(localStorage.getItem('pwdFails') || 0);
+    let lockUntil = Number(localStorage.getItem('pwdLockUntil') || 0);
+    let lockoutTimer;
+
+    const isLockedOut = () => Date.now() < lockUntil;
+
+    function beginLockout() {
+        const pwdInput = document.getElementById('pwdInput');
+        const unlockBtn = document.getElementById('unlockBtn');
+        pwdInput.value = '';
+        pwdInput.disabled = true;
+        pwdInput.blur();
+        unlockBtn.disabled = true;
+
+        clearInterval(lockoutTimer);
+        const tick = () => {
+            const remain = lockUntil - Date.now();
+            if (remain <= 0) { endLockout(); return; }
+            const m = Math.floor(remain / 60000);
+            const s = Math.floor((remain % 60000) / 1000);
+            document.getElementById('lockoutMsg').innerText =
+                `보안 잠금 — ${m}:${String(s).padStart(2, '0')} 후 다시 시도`;
+        };
+        tick();
+        lockoutTimer = setInterval(tick, 250);
+    }
+
+    function endLockout() {
+        clearInterval(lockoutTimer);
+        lockUntil = 0;
+        failCount = 0;
+        localStorage.removeItem('pwdLockUntil');
+        localStorage.removeItem('pwdFails');
+
+        document.getElementById('pwdInput').disabled = false;
+        document.getElementById('unlockBtn').disabled = false;
+        document.getElementById('lockoutMsg').innerText = '';
+        document.getElementById('pwdWarning').innerHTML = '';
+    }
+
     function checkPassword() {
+        if (isLockedOut()) return;
+
         const pwdInput = document.getElementById('pwdInput');
         const pwd = pwdInput.value.trim();
-        
+
         if (pwd === '김연정') {
+            endLockout();
             document.getElementById('lockScreen').classList.add('unlocked');
             pwdInput.blur(); // 키보드 숨기기
-            
+
             // 잠금 해제 후 1초 뒤 재난문자 트리거
             setTimeout(() => {
                 document.getElementById('emergencyAlertOverlay').classList.add('show');
                 playEmergencySound();
             }, 1000);
-            
+
         } else {
             const lockScreen = document.getElementById('lockScreen');
+            const warning = document.getElementById('pwdWarning');
+
+            failCount++;
+            localStorage.setItem('pwdFails', failCount);
+
             lockScreen.classList.add('shake');
             pwdInput.value = '';
-            showToast('비밀번호가 일치하지 않습니다.');
             setTimeout(() => lockScreen.classList.remove('shake'), 400);
+
+            warning.innerHTML = WRONG_PWD_WARNING;
+            warning.classList.remove('show');
+            void warning.offsetWidth; // 연속 실패 시 깜빡임 애니메이션 재시작
+            warning.classList.add('show');
+
+            if (failCount >= MAX_ATTEMPTS) {
+                lockUntil = Date.now() + LOCKOUT_MS;
+                localStorage.setItem('pwdLockUntil', lockUntil);
+                showToast('3회 실패. 2분간 잠급니다.');
+                beginLockout();
+            } else {
+                showToast(`비밀번호가 일치하지 않습니다. (${failCount}/${MAX_ATTEMPTS})`);
+            }
         }
     }
 
     // 비밀번호 실시간 감지 (완성 즉시 자동 해제)
     function handleInput() {
+        if (isLockedOut()) return;
         const pwdInput = document.getElementById('pwdInput');
         if (pwdInput.value.trim() === '김연정') {
             checkPassword();
         }
     }
+
+    // 잠금 중 새로고침해도 남은 시간을 이어서 표시한다
+    if (isLockedOut()) beginLockout();
 
     // 엔터키로 오답 확인 지원
     function handleEnter(e) {
